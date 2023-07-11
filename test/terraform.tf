@@ -8,11 +8,11 @@ terraform {
       source = "hashicorp/tls"
     }
     libvirt = {
-      source = "dmacvicar/libvirt"
+      source  = "dmacvicar/libvirt"
       version = "0.7.1"
     }
     matchbox = {
-      source = "poseidon/matchbox"
+      source  = "poseidon/matchbox"
       version = "0.5.1"
     }
     ct = {

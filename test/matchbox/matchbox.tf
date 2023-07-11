@@ -163,12 +163,12 @@ resource "docker_container" "matchbox" {
 }
 
 output "client_cert" {
-    description = "client certificate and private key, used to connect to matchbox gRPC API"
+  description = "client certificate and private key, used to connect to matchbox gRPC API"
 
-    value = {
-        ca_cert_pem     = tls_self_signed_cert.matchbox_ca.cert_pem
-        cert_pem        = tls_locally_signed_cert.matchbox_client.cert_pem
-        private_key_pem = tls_private_key.matchbox_client.private_key_pem
-    }
-    sensitive = true
+  value = {
+    ca_cert_pem     = tls_self_signed_cert.matchbox_ca.cert_pem
+    cert_pem        = tls_locally_signed_cert.matchbox_client.cert_pem
+    private_key_pem = tls_private_key.matchbox_client.private_key_pem
+  }
+  sensitive = true
 }
