@@ -1,0 +1,56 @@
+variant: flatcar
+version: 1.0.0
+systemd:
+  units:
+    - name: ioscheduler.service
+      enabled: true
+      # What are ROTATIONAL_SCHEDULERS and SSD_SCHEDULERS supposed to represent ?
+      contents: |
+        [Unit]
+        Description=Set block I/O device scheduler for drives as per configuration
+        [Service]
+        Type=oneshot
+        RemainAfterExit=yes
+        Environment="ROTATIONAL_SCHEDULERS=\"\""
+        Environment="SSD_SCHEDULERS=\"none noop\" "
+        ExecStart=/opt/bin/ioscheduler.sh
+        [Install]
+        WantedBy=multi-user.target
+storage:
+  files:
+    - path: /opt/barney/ioscheduler.sh
+      mode: 0744
+      contents:
+        inline: |
+            #!/bin/bash
+            # Set the IO schedulers for rotational and solid-state disks as per the
+            # environment variables ROTATIONAL_SCHEDULERS and SSD_SCHEDULERS respectively.
+            # Multiple entries can be provided with space separator in preference order
+            # Unsupported schedulers will be skipped.
+            # Eg: If the preference order is "bfq mq-deadline none", and bfq is unsupported,
+            # mq-deadline will be set. An empty string means no changes. 
+            set -u
+
+            function set_scheduler {
+              scheduler_file=$1
+              shift
+              # Iterate over schedulers specified in preference order
+              # and set the first valid one.
+              for scheduler_type in "$@"; do
+                  # Not using grep -w because dashes are allowed in scheduler_type
+                  if grep -q "\b$scheduler_type\b" $scheduler_file; then
+                    echo $scheduler_type > $scheduler_file
+                    break
+                  fi
+              done
+            }
+
+            # Iterate over all disks and set as per type
+            for d in /sys/block/sd*/queue; do
+              if grep -q 1 $d/rotational; then
+                  set_scheduler $d/scheduler $ROTATIONAL_SCHEDULERS 
+              else
+                  set_scheduler $d/scheduler $SSD_SCHEDULERS
+              fi
+            done
+

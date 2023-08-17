@@ -1,0 +1,16 @@
+variant: flatcar
+version: 1.0.0
+systemd:
+  units:
+    - name: motdgen.service
+      enabled: true
+storage:
+  directories:
+    - path: /etc/motd.d
+      mode: 0755
+  files:
+    - path: /etc/motd.d/monsoon.conf
+      mode : 0644
+      contents:
+        inline: |
+          \033[1;33m[MONSOON]\033[1;35m This machine is managed by Monsoon\033[0m

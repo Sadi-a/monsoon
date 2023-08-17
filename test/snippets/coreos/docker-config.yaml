@@ -1,0 +1,18 @@
+variant: flatcar
+version: 1.0.0
+storage:
+  directories:
+    - path: /etc/systemd/system/docker.service.d
+      mode: 0755
+  files:
+    - path : /etc/systemd/system/docker.service.d/50-options.conf
+      mode: 0644
+      contents:
+        inline: |
+          [Service]
+          ExecStartPre=/usr/bin/mkdir -p /var/run/dockersocket
+          # When log rotation happens external to k8s (eg: docker daemon managed) then
+          # kubectl logs can only access the current log. Hence in a docker daemon based
+          # environment, there is no point in having more than 1 docker log files. Note that
+          # docker logs can access multiple log files, if configured.
+          Environment='DOCKER_OPTS=--live-restore --host=unix:///var/run/dockersocket/docker.sock --bip=172.17.0.1/16 --storage-driver=overlay2 --metrics-addr=127.0.0.1:9323 --experimental=true --log-driver=json-file --log-opt=max-size=100m --log-opt=max-file=1 --registry-mirror=https://registry-mirror.infra.corp.arista.io/ --exec-opt native.cgroupdriver="cgroupfs" }}'
