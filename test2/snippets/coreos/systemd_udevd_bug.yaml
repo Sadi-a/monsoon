@@ -1,0 +1,15 @@
+variant: flatcar
+version: 1.0.0
+storage:
+  files:
+      # Workaround for bug:
+      # https://github.com/systemd/systemd/issues/3374#issuecomment-288882355
+      # Would be nice if a PR fixing this would be done someday 
+      # since this bug has been around since May 2016
+    - path: /etc/systemd/network/99-default.link
+      mode: 0644
+      contents:
+        inline: |
+          [Link]
+          NamePolicy=kernel database onboard slot path
+          MACAddressPolicy=none

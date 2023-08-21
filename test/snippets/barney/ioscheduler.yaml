@@ -13,7 +13,7 @@ systemd:
         RemainAfterExit=yes
         Environment="ROTATIONAL_SCHEDULERS=\"\""
         Environment="SSD_SCHEDULERS=\"none noop\" "
-        ExecStart=/opt/bin/ioscheduler.sh
+        ExecStart=/opt/barney/ioscheduler.sh
         [Install]
         WantedBy=multi-user.target
 storage:

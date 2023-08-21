@@ -12,5 +12,6 @@ storage:
     - path: /etc/motd.d/monsoon.conf
       mode : 0644
       contents:
-        inline: |
-          \033[1;33m[MONSOON]\033[1;35m This machine is managed by Monsoon\033[0m
+        inline: !!binary |
+          G1sxOzMzbVtNT05TT09OXRtbMzVtIFRoaXMgbWFjaGluZSBpcyBtYW5hZ2VkIGJ5IE1vbnNvb24b
+          WzBtCg==

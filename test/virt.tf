@@ -66,7 +66,7 @@ resource "libvirt_network" "monsoon_test" {
       option_value = "set:efi-x64-http,option:client-arch,16"
     }
     options {
-      option_name = "dhcp-boot"
+      option_name  = "dhcp-boot"
       option_value = "tag:efi-x64-http,\"http://gateway.k8s.local:8080/assets/ipxe/x86_64/undionly.kpxe\""
     }
     options {
@@ -80,7 +80,7 @@ resource "libvirt_network" "monsoon_test" {
       option_value = "set:efi-aa64-http,option:client-arch,19"
     }
     options {
-      option_name = "dhcp-boot"
+      option_name  = "dhcp-boot"
       option_value = "tag:efi-aa64-http,\"http://gateway.k8s.local:8080/assets/ipxe/aarch64/snponly.efi\""
     }
     options {
@@ -96,26 +96,39 @@ resource "libvirt_volume" "os_disk" {
   name     = "${each.key}_os_disk"
   // 35GB for each machine, minimum required in the doc is
   // 30GB, we try to get just a bit of leeway
-  size     = 35 * 1024 * 1024 * 1024
+  size = 35 * 1024 * 1024 * 1024
+}
+
+resource "libvirt_volume" "persistent" {
+  format   = "qcow2"
+  for_each = local.nodes
+  name     = "${each.key}_persistent"
+  // 35GB for each machine, minimum required in the doc is
+  // 30GB, we try to get just a bit of leeway
+  size = 5 * 1024 * 1024 * 1024
 }
 
 resource "libvirt_domain" "vm" {
   for_each = local.nodes
   name     = each.key
-  memory   = 4096
+  memory   = 3 * 1024
   vcpu     = 2
   // x86_64 config uses the machine type exclusive for it
   // The same is done for aarch64 configs
-  machine = "q35"
-  arch    = "x86_64"
+  machine = (each.value.cpu_architecture == "aarch64") ? "virt" : "q35"
+  # machine = "q35"
+  arch = each.value.cpu_architecture
   boot_device {
-    dev = ["hd", "network"]
+    dev = local.enable_install ? ["hd", "network"] : ["network", "hd", ]
   }
 
   autostart = true
 
   disk {
     volume_id = libvirt_volume.os_disk[each.key].id
+  }
+  disk {
+    volume_id = libvirt_volume.persistent[each.key].id
   }
 
   network_interface {

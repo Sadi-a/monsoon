@@ -15,4 +15,6 @@ storage:
           # kubectl logs can only access the current log. Hence in a docker daemon based
           # environment, there is no point in having more than 1 docker log files. Note that
           # docker logs can access multiple log files, if configured.
-          Environment='DOCKER_OPTS=--live-restore --host=unix:///var/run/dockersocket/docker.sock --bip=172.17.0.1/16 --storage-driver=overlay2 --metrics-addr=127.0.0.1:9323 --experimental=true --log-driver=json-file --log-opt=max-size=100m --log-opt=max-file=1 --registry-mirror=https://registry-mirror.infra.corp.arista.io/ --exec-opt native.cgroupdriver="cgroupfs" }}'
+          # Environment='DOCKER_OPTS=--live-restore --host=unix:///var/run/dockersocket/docker.sock --bip=172.17.0.1/16 --storage-driver=overlay2 --metrics-addr=127.0.0.1:9323 --experimental=true --log-driver=json-file --log-opt=max-size=100m --log-opt=max-file=1 --registry-mirror=https://registry-mirror.infra.corp.arista.io/  }}'
+          Environment='DOCKER_OPTS=--live-restore --bip=172.17.0.1/16 --storage-driver=overlay2 --metrics-addr=127.0.0.1:9323 --experimental=true --log-driver=json-file --log-opt=max-size=100m --log-opt=max-file=1 --registry-mirror=https://registry-mirror.infra.corp.arista.io/ --exec-opt native.cgroupdriver="cgroupfs"'
+          # --exec-opt native.cgroupdriver="cgroupfs"

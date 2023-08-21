@@ -1,0 +1,36 @@
+variant: flatcar
+version: 1.0.0
+storage:
+  files:
+    - path: /etc/systemd/network/00-eno.network
+      mode: 0644
+      contents:
+        inline: |
+          [Match]
+          Name=en*
+
+          [Network]
+          Bond=bond007
+          DHCP=false
+    - path: /etc/systemd/network/10-bond007.netdev
+      mode: 0644
+      contents:
+        inline: |
+          [NetDev]
+          Name=bond007
+          Kind=bond
+          [Bond]
+          Mode=802.3ad
+          TransmitHashPolicy=layer3+4
+          MIIMonitorSec=10s
+    - path: /etc/systemd/network/20-eno.network
+      mode: 0644
+      contents:
+        inline: |
+          [Match]
+          Name=bond007
+          [Link]
+          MACAddress=${MACAddress}
+          MTUBytes=1500
+          [Network]
+          DHCP=true

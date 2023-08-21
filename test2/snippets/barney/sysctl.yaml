@@ -1,0 +1,12 @@
+variant: flatcar
+version: 1.0.0
+storage:
+  files:
+    - path: /etc/sysctl.d/barney_node.conf
+      # Avoid EPERM when running stests with AgentCommandRequest that try to increase
+      # SO_SNDBUF. Add in rmem_max just because.
+      mode: 0644
+      contents: 
+        inline: |
+          net.core.wmem_max=8388608
+          net.core.rmem_max=8388608

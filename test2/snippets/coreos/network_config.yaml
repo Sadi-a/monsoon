@@ -1,0 +1,71 @@
+variant: flatcar
+version: 1.0.0
+systemd:
+  units:
+  - name: etc-nsswitch-conf.mount
+    enabled: true
+    contents: |
+      [Mount]
+      What=/etc/nsswitch.conf.new
+      Where=/etc/nsswitch.conf
+      Type=none
+      Options=bind
+  
+      [Install]
+      WantedBy=local-fs.target
+storage:
+  directories:
+    - path: /etc/systemd/resolved.conf.d
+      mode: 0644
+  files:
+    - path: /etc/systemd/network/zy-dhcp.network
+      mode: 0644
+      contents:
+        inline: |
+          [Network]
+          DHCP=ipv4
+          LinkLocalAddressing=no
+          IPv6AcceptRA=no
+          # For changing Domains use /etc/systemd/resolved.conf.d/zy-aristanetworks.conf
+          Domains=sjc.aristanetworks.com aristanetworks.com
+          NTP=time1.google.com
+          NTP=time2.google.com
+          NTP=time3.google.com
+          [DHCP]
+          UseNTP=false
+    - path: /etc/systemd/network/etc/systemd/network/70-cni.network
+      mode: 0644
+      contents:
+        inline: |
+          [Match]
+          Name=cni*
+          [Link]
+          Unmanaged=yes
+    - path: /etc/systemd/resolved.conf.d/arista.conf
+      mode: 0644
+      append:
+      # NOTE: do not put the abusive search string we put everywhere. This just
+      # causes baffling resolution errors in user applications.
+      - inline: |
+          [Resolve]
+          Domains=aristanetworks.com sjc.aristanetworks.com
+    - path: /etc/nsswitch.conf.new
+      contents:
+        inline: |
+          passwd:      files usrfiles systemd
+          shadow:      files usrfiles
+          group:       files usrfiles systemd
+
+          hosts:       files usrfiles resolve myhostname dns
+          networks:    files usrfiles dns
+
+          services:    files usrfiles
+          protocols:   files usrfiles
+          rpc:         files usrfiles
+
+          ethers:      files
+          netmasks:    files
+          netgroup:    files
+          bootparams:  files
+          automount:   files
+          aliases:     files
