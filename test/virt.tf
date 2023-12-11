@@ -99,19 +99,37 @@ resource "libvirt_volume" "os_disk" {
   size = 35 * 1024 * 1024 * 1024
 }
 
+resource "libvirt_volume" "raid_disk" {
+  format   = "qcow2"
+  for_each = local.nodes
+  name     = "${each.key}_raid_disk"
+  // 35GB for each machine, minimum required in the doc is
+  // 30GB, we try to get just a bit of leeway
+  size = 10 * 1024 * 1024 * 1024
+}
+
+resource "libvirt_volume" "raid_disk2" {
+  format   = "qcow2"
+  for_each = local.nodes
+  name     = "${each.key}_raid_disk_2"
+  // 35GB for each machine, minimum required in the doc is
+  // 30GB, we try to get just a bit of leeway
+  size = 10 * 1024 * 1024 * 1024
+}
+
 resource "libvirt_volume" "persistent" {
   format   = "qcow2"
   for_each = local.nodes
   name     = "${each.key}_persistent"
   // 35GB for each machine, minimum required in the doc is
   // 30GB, we try to get just a bit of leeway
-  size = 5 * 1024 * 1024 * 1024
+  size = 10 * 1024 * 1024 * 1024
 }
 
 resource "libvirt_domain" "vm" {
   for_each = local.nodes
   name     = each.key
-  memory   = 3 * 1024
+  memory   = 5 * 1024
   vcpu     = 2
   // x86_64 config uses the machine type exclusive for it
   // The same is done for aarch64 configs
@@ -126,6 +144,12 @@ resource "libvirt_domain" "vm" {
 
   disk {
     volume_id = libvirt_volume.os_disk[each.key].id
+  }
+  disk {
+    volume_id = libvirt_volume.raid_disk[each.key].id
+  }
+  disk {
+    volume_id = libvirt_volume.raid_disk2[each.key].id
   }
   disk {
     volume_id = libvirt_volume.persistent[each.key].id

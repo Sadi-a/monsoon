@@ -1,10 +1,29 @@
 variant: flatcar
 version: 1.0.0
+systemd:
+  units:
+  - name: docker-prune-daemon.service
+    contents: |
+      [Unit]
+      Description="Prune docker daemon"
+      [Service]
+      Type=oneshot
+      ExecStart=/usr/bin/docker system prune -f --filter "until=3h"
 storage:
   directories:
     - path: /etc/systemd/system/docker.service.d
       mode: 0755
   files:
+    - path : /etc/systemd/system/docker-prune-daemon.timer
+      mode: 0644
+      contents:
+        inline: |
+          [Install]
+          WantedBy=timers.target
+          [Unit]
+          Description=Run docker-prune-daemon service every day
+          [Timer]
+          OnCalendar=*-*-* 08:00:00
     - path : /etc/systemd/system/docker.service.d/50-options.conf
       mode: 0644
       contents:

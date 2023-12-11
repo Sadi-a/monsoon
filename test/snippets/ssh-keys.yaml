@@ -14,7 +14,7 @@ passwd:
     # Kenneth Duda <kduda@arista.com>
     - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC/hSlK0OEFoCF2/+oEvzPQCGnGAr9slf3GAcFIcftqzLrjhfLIgEagJwZJM9odZE6BTGfgBkp1CbzNEerK+vezjL2lviTZmlS5Pr4RH2QfXYIrO1Cw6rwMU8mtOYIFkAXtbRiuVXKjwr7BJuWX4C7ZqXyMHgSqjTk9Q4oebdMduzowWkhV6xOAVrXPL91j/YG30gjM3wRoZ7vTUJ/oyXZp5k9dIGPWMeXb/DxEyiLki5dHwWkFThIiMd8IxyS4i9giq5Q+y9VJo5WiSzbQWU17QS39HUb1Q0cJMHZKKx+XOVYYlh3mzcm98oO7p6nD6uDqycXmW7de8imqLLIwBb78IuZiTiyUFGaWFT4TapfYZh3+RMQDsFTKNoItDW46acLU3Z1hMBT/Rq2Dj3i21tt7Rz58b+jIc4/SgXeNZRCITkxqDvbOI4ayCLY2q9LeUxkQOlPc5EVtp5Fpj7tUNkrINaTPkNVXpA/eL1iN04MvDLjPxA8rwpzUQf1EL8EIHJ8= kduda@kduda
     # Hugo Florenty <sadi@arista.com>
-    - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICe3f8ynCl0eUV0VICJsQJBAfDCLHVvB8zQF7+/kadIg sadi@arista.com
+    - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBAAmZYlpSJ4/GCSKwHS3QV+rU9QCOkd5/Z2iOxj8Wcg sadi@arista.com
 
     # Infra Admins
     # Krishnanand Thommandra <kthommandra@arista.com>

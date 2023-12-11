@@ -6,7 +6,42 @@ storage:
       mode: 0755
     - path: /etc/systemd/system/containerd.service.d
       mode: 0755
+    - path: /etc/systemd/system/containerd/certs.d/docker.io
+      mode: 0755
+    - path: /etc/systemd/system/containerd/certs.d/us-docker.pkg.dev
+      mode: 0755
   files:
+    - path: /etc/systemd/system/containerd/certs.d/docker.io/hosts.toml
+      mode: 0644
+      contents:
+        inline: |
+          # https://github.com/containerd/containerd/blob/main/docs/hosts.md
+          server = "https://registry-1.docker.io"
+          host."https://registry-mirror.infra.corp.arista.io".capabilities = ["pull", "resolve"]
+    - path: /etc/systemd/system/containerd/certs.d/us-docker.pkg.dev/hosts.toml
+      mode: 0644
+      contents:
+        inline: |
+          # https://github.com/containerd/containerd/blob/main/docs/hosts.md
+          server = "https://us-docker.pkg.dev"
+          [header]
+            User-Agent = "cri-kubelet/1.22.17 (linux; arista-internal-k8s; cluster-infra)"
+    - path: /etc/systemd/system/containerd.service.d/10-use-custom-config.conf
+      mode: 0644
+      contents:
+        inline: |
+          [Service]
+          ExecStart=
+          ExecStart=/usr/bin/containerd
+    - path: /etc/crictl.yaml
+      mode: 0644
+      contents:
+        inline: |
+          # https://github.com/kubernetes-sigs/cri-tools/blob/master/docs/crictl.md
+          runtime-endpoint: unix:///run/containerd/containerd.sock
+          image-endpoint: unix:///run/containerd/containerd.sock
+          # timeout (in seconds) for connecting to runtime server
+          timeout: 10
     - path: /etc/containerd/config.toml
       mode: 0644
       contents:

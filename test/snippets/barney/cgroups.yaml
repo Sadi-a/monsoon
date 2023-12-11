@@ -1,0 +1,9 @@
+variant: flatcar
+version: 1.0.0
+storage:
+  files:
+    - path: /usr/share/oem/grub.cfg
+      mode: 0644
+      append :
+      - inline: |
+          set linux_append="$linux_append systemd.unified_cgroup_hierarchy=1"

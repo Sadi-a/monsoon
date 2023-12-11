@@ -23,14 +23,16 @@ storage:
           Mode=802.3ad
           TransmitHashPolicy=layer3+4
           MIIMonitorSec=10s
-    - path: /etc/systemd/network/20-eno.network
+    - path: /etc/systemd/network/20-bond007.network
       mode: 0644
       contents:
         inline: |
           [Match]
           Name=bond007
+
           [Link]
           MACAddress=${MACAddress}
           MTUBytes=1500
+
           [Network]
           DHCP=true

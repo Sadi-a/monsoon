@@ -1,0 +1,10 @@
+variant: flatcar
+version: 1.0.0
+storage:
+  files:
+    - path: /etc/flatcar/update.conf
+      overwrite: true
+      contents:
+        inline: |
+                    REBOOT_STRATEGY=off
+      mode: 0420

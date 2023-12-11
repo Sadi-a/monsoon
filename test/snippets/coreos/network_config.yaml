@@ -41,7 +41,7 @@ storage:
           Name=cni*
           [Link]
           Unmanaged=yes
-    - path: /etc/systemd/resolved.conf.d/arista.conf
+    - path: /etc/systemd/resolved.conf.d/zy-aristanetworks.conf
       mode: 0644
       append:
       # NOTE: do not put the abusive search string we put everywhere. This just

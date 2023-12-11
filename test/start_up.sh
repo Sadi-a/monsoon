@@ -4,10 +4,10 @@ virsh destroy controller100
 virsh destroy worker100
 virsh undefine controller100
 virsh undefine worker100
-rm -f /var/lib/libvirt/images/controller100_os_disk > /dev/null
-rm -f /var/lib/libvirt/images/controller100_persistent > /dev/null
-rm -f /var/lib/libvirt/images/worker100_os_disk > /dev/null
-rm -f /var/lib/libvirt/images/worker100_persistent > /dev/null
+# rm -f /home/sadi/Documents/libvirt-images/controller100_os_disk > /dev/null
+# rm -f /home/sadi/Documents/libvirt-images/controller100_persistent > /dev/null
+# rm -f /home/sadi/Documents/libvirt-images/worker100_os_disk > /dev/null
+# rm -f /home/sadi/Documents/libvirt-images/worker100_persistent > /dev/null
 rm terraform.tfstate
 rm terraform.tfstate.backup
 
@@ -19,4 +19,3 @@ rm terraform.tfstate.backup
 # terraform apply -auto-approve
 # cd ..
 terraform apply -auto-approve
-

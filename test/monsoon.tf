@@ -10,13 +10,15 @@ module "monsoon" {
 
   # configuration
   k8s_domain_name    = libvirt_domain.vm["controller100"].network_interface.0.hostname
-  ssh_authorized_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICe3f8ynCl0eUV0VICJsQJBAfDCLHVvB8zQF7+/kadIg sadi@arista.com"
+  ssh_authorized_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBAAmZYlpSJ4/GCSKwHS3QV+rU9QCOkd5/Z2iOxj8Wcg sadi@arista.com"
   oem_type           = ""
   enable_install     = local.enable_install
+  install_disk       = local.install_disk
+  networking         = "flannel"
   # set to http only if you cannot chainload to iPXE firmware with https support
   download_protocol = "http"
-  # machines
 
+  # machines
   controllers = [
     for k, v in local.controllers :
     {
@@ -40,38 +42,19 @@ module "monsoon" {
     }
   ]
 
-  snippets = {
-    "controller100" = local.snippets_controllers,
-    "worker100"     = local.snippets_worker100,
-  }
+  snippets = merge(
+    local.snippets_controllers,
+    local.snippets_workers
+  )
   worker_node_labels = local.worker_node_labels
+  worker_node_taints = local.worker_node_taints
   # worker_node_taints = local.worker_node_taints
   depends_on = [
     libvirt_domain.vm,
   ]
 }
 
-resource "local_file" "kubeconfig-mercury" {
+resource "local_sensitive_file" "kubeconfig-mercury" {
   content  = module.monsoon.kubeconfig-admin
   filename = "mercury-config"
 }
-
-# provider "kubernetes" {
-#   config_path    = "mercury-config"
-# }
-# 
-# resource "kubernetes_secret" "test" {
-#   metadata {
-#     name = "git-creds"
-#   }
-#   depends_on = [
-#     module.monsoon
-#   ]
-# 
-#   data = {
-#     username = "EXAMPLE"
-#     password = "EXAMPLE"
-#   }  
-# 
-#   type = "Opaque"
-# }

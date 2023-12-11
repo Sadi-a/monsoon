@@ -1,0 +1,167 @@
+variant: flatcar
+version: 1.0.0
+systemd:
+  units:
+  - name: nfs-server.service
+    contents: |
+      [Unit]
+      Description=NFS server and services
+      DefaultDependencies=no
+      Requires= network.target proc-fs-nfsd.mount
+      Requires= nfs-mountd.service
+      Wants=rpcbind.socket network-online.target
+      Wants=rpc-statd.service nfs-idmapd.service
+      Wants=rpc-statd-notify.service
+      After= network-online.target local-fs.target
+      After= proc-fs-nfsd.mount rpcbind.socket nfs-mountd.service
+      After= nfs-idmapd.service rpc-statd.service
+      Before= rpc-statd-notify.service
+      # GSS services dependencies and ordering
+      Wants=auth-rpcgss-module.service
+      After=rpc-gssd.service gssproxy.service rpc-svcgssd.service
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      ExecStartPre=/usr/sbin/exportfs -r
+      ExecStart=/usr/sbin/rpc.nfsd --port 9023
+      ExecStop=/usr/sbin/rpc.nfsd 0
+      ExecStopPost=/usr/sbin/exportfs -au
+      ExecStopPost=/usr/sbin/exportfs -f
+      ExecReload=/usr/sbin/exportfs -r
+      [Install]
+      WantedBy=multi-user.target
+  - name: rpc-statd.service
+    contents: |
+      [Unit]
+      Description=NFS status monitor for NFSv2/3 locking.
+      DefaultDependencies=no
+      Conflicts=umount.target
+      Requires=nss-lookup.target rpcbind.socket
+      Wants=network-online.target
+      After=network-online.target nss-lookup.target rpcbind.socket
+      PartOf=nfs-utils.service
+      [Service]
+      Environment=RPC_STATD_NO_NOTIFY=1
+      Type=forking
+      PIDFile=/var/run/rpc.statd.pid
+      ExecStart=/usr/sbin/rpc.statd --port 9025 --outgoing-port 9026
+storage:
+  directories:
+    - path: /etc/kubernetes/config
+      mode: 0755
+    - path: /etc/kubernetes/kube-scheduler
+      mode: 0755
+  files:
+    - path: /opt/bin/conntrack
+      mode: 0755
+      contents:
+        source: https://storage.googleapis.com/kubernetes-release/conntrack/conntrack
+        verification:
+          hash: "sha256-7ad88e7c7218f852d2d11036b49b0879b65c90e4f9b0cec45df5d01ce135089b"
+    - path: /var/lib/kubelet/config.json
+      contents: 
+        inline: |
+          {
+            "auths": {
+              "us-docker.pkg.dev": {
+                "auth": "{{ ('_json_key:' + ""}}"
+              }
+            },
+            "HttpHeaders": {
+              "User-Agent": "Docker-kubelet/1.26.3 (linux; arista-internal-k8s; cluster-{{ cluster_name }})"
+            },
+          }
+    - path: /opt/bin/socat
+      mode: 0755
+      contents:
+          source: https://github.com/jfrabaute/socat-static-binary/releases/download/v0.0.1/socat-linux-amd64
+          verification: 
+            hash: sha256-e2d0da018252fc18f755014854cf4c337a7a1c446879677fc1e20644c744eab2
+    - path: /etc/multipath.conf
+      mode: 0755
+      contents:
+        inline: |
+          # WARNING: Portworx does not support the field user_friendly_names.
+          # Do not use it. It causes portworx to get into a failure which is
+          # unrecoverable without major surgery.
+
+          defaults {
+            find_multipaths "on"
+            polling_interval 10
+          }
+          blacklist {
+            devnode "!^(sd[a-z]|dasd[a-z]|nvme[0-9])"
+                  device {
+              vendor "ATA"
+            }
+            device {
+              vendor "SGI"
+              product "Universal Xport"
+            }
+            device {
+              vendor "^DGC"
+              product "LUNZ"
+            }
+            device {
+              vendor "EMC"
+              product "LUNZ"
+            }
+            device {
+              vendor "DELL"
+              product "Universal Xport"
+            }
+            device {
+              vendor "FUJITSU"
+              product "Universal Xport"
+            }
+            device {
+              vendor "IBM"
+              product "Universal Xport"
+            }
+            device {
+              vendor "IBM"
+              product "S/390"
+            }
+            device {
+              vendor "LENOVO"
+              product "Universal Xport"
+            }
+            device {
+              vendor "(NETAPP|LSI|ENGENIO)"
+              product "Universal Xport"
+            }
+            device {
+              vendor "STK"
+              product "Universal Xport"
+            }
+            device {
+              vendor "SUN"
+              product "Universal Xport"
+            }
+            device {
+              vendor "(Intel|INTEL)"
+              product "VTrak V-LUN"
+            }
+            device {
+              vendor "Promise"
+              product "VTrak V-LUN"
+            }
+            device {
+              vendor "Promise"
+              product "Vess V-LUN"
+            }
+          }
+          devices {
+            device {
+              vendor "PURE"
+              product "FlashArray"
+              path_grouping_policy "group_by_prio"
+              hardware_handler "1 alua"
+              prio "alua"
+              failback "immediate"
+              fast_io_fail_tmo 10
+                          max_sectors_kb 4096
+            }
+          }
+          overrides {
+          }

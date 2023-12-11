@@ -2,7 +2,7 @@ variant: flatcar
 version: 1.0.0
 systemd:
   units:
-    - name: mkfs.service
+    - name: mkfs-data${diskno}.service
       # There are two sensible approaches to persistent state:
       #
       #    1. use a storage system that provides strong recoverability; or,
@@ -59,7 +59,8 @@ systemd:
       contents: |
         [Unit]
         Description= Mounting cached data
-        After= mkfs.service
+        After= mkfs-data${diskno}.service
+        Before=local-fs.target
         DefaultDependencies=no
         [Mount]
         What=/dev/disk/by-label/data${diskno}
@@ -76,7 +77,6 @@ systemd:
         Description=Create b5 cache directory under /data${diskno}
         Requires=data${diskno}.mount
         After=data${diskno}.mount
-        Before=local-fs.target
         DefaultDependencies=no
         [Service]
         Type=oneshot
@@ -109,10 +109,15 @@ storage:
       mode: 0544
       contents:
         inline: |
-          for device in /sys/block/*; do
-            if readlink "$device" | grep -q virtual; then
-              continue # Skip virtual devices
-            fi
-            echo -en "/dev$${device#/sys/block*}\t"
-            udevadm info -a -p "$device" | awk -F '"' '/ATTR{size}/ { print $2 }'
-          done | grep -v $(realpath ${used_disk}) | cut -f1
+          if [ -L /dev/disk/by-label/data2 ] ;
+          then
+            sudo btrfs fi show | awk '$1=="devid" {print $NF}'
+          else
+            for device in /sys/block/*; do
+              if readlink "$device" | grep -q virtual; then
+                continue # Skip virtual devices
+              fi
+              echo -en "/dev$${device#/sys/block*}\t"
+              udevadm info -a -p "$device" | awk -F '"' '/ATTR{size}/ { print $2 }'
+            done | grep -v $(lsblk -ndo pkname $(realpath $(find "/dev/disk/by-label/" \( -name persist -o -name ROOT \)))) | cut -f1
+          fi

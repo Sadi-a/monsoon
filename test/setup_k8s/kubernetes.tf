@@ -1,35 +1,13 @@
 locals {
-  barney_namespace = "barney"
-}
-
-provider "kubernetes" {
   config_path = "../mercury-config"
 }
 
-
-resource "kubernetes_secret" "test" {
-  metadata {
-    name      = "git-creds"
-    namespace = "barney"
+provider "helm" {
+  kubernetes {
+    config_path = local.config_path
   }
-
-  data = {
-    username = "Foo"
-    password = "Bar"
-  }
-
-  type = "Opaque"
 }
 
-resource "kubernetes_namespace" "barney" {
-  metadata {
-    annotations = {
-      name = local.barney_namespace
-    }
-
-    labels = {
-      environment = "production"
-    }
-    name = local.barney_namespace
-  }
+provider "kubernetes" {
+  config_path = local.config_path
 }

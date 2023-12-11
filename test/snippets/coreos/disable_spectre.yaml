@@ -9,6 +9,6 @@ storage:
     # for the official CVEs
     - path: /usr/share/oem/grub.cfg
       mode: 0644
-      contents:
-        inline: |
+      append :
+      - inline: |
           set linux_append="coreos.autologin=tty1 pti=off spectre_v2=off l1tf=off nospec_store_bypass_disable no_stf_barrier"
