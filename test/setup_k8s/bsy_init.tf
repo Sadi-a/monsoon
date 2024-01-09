@@ -460,7 +460,7 @@ resource "kubernetes_manifest" "barney_rsvp_p4togit_ssh_key" {
         "app.kubernetes.io/name" = "barney-rsvp-p4togit-cron"
       }
       "name"      = "barney-rsvp-p4togit-ssh-key"
-      "namespace" = "default"
+      "namespace" = "barney"
     }
     "type" = "Opaque"
   }

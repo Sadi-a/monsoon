@@ -37,6 +37,10 @@ locals {
   ]
   node_bsy_aarch64 = [
   ]
+  node_bsy_head = [
+  ]
+  node_bsy_head_aarch64 = [
+  ]
   node_barney_aux = [
   ]
   node_bus = [
@@ -117,7 +121,7 @@ locals {
   ###########################################################
 
   # Defining the bsy snippets map, including machine specific snippets
-  snippets_workers_bsy = { for node in concat(local.node_bsy, local.node_bsy_aarch64) :
+  snippets_workers_bsy = { for node in concat(local.node_bsy, local.node_bsy_aarch64,local.node_bsy_head,local.node_bsy_head_aarch64) :
     node.name => concat(
       local.snippets_workers_generic,
       local.snippets_barney,
@@ -145,9 +149,11 @@ locals {
     )
   }
 
-  snippets_workers = merge(local.snippets_workers_bsy, local.snippets_workers_barney_aux)
-
-
+  snippets_workers = merge(
+    local.snippets_workers_bsy,
+    local.snippets_workers_bus,
+    local.snippets_workers_barney_aux,
+  )
 
   ###########################################################
   ######################     Taints     #####################
@@ -168,9 +174,8 @@ locals {
   ##################     Worker taints     ##################
   ###########################################################
 
-
   # Defining the bsy snippets map, including machine specific snippets
-  taints_workers_bsy = { for node in concat(local.node_bsy, local.node_bsy_aarch64) :
+  taints_workers_bsy = { for node in concat(local.node_bsy, local.node_bsy_aarch64,local.node_bsy_head,local.node_bsy_head_aarch64) :
     node.name => concat(
       local.barney_bsy_taints,
     )
@@ -207,10 +212,18 @@ locals {
 
   barney_bsy_labels = [
     # "node-role.kubernetes.io/barney=barney",
-    # "role/barney=barney",
+    "role/barney=barney",
     # "node-role.kubernetes.io/barnzilla=barnzilla",
     "role=barnzilla",
     # "node-role.kubernetes.io/worker=worker",
+    "px/enabled=false",
+  ]
+
+  barney_bsy_aarch64_labels = [
+    "node-role.kubernetes.io/barney-arm64=barney-arm64",
+    "node-role/barney-arm64=barney-arm64",
+    "node-role.kubernetes.io/worker=worker",
+    "node-role/worker=worker",
     "px/enabled=false",
   ]
 
@@ -234,28 +247,20 @@ locals {
     "px/enabled=false",
   ]
 
-  barney_bsy_aarch64_labels = [
-    "node-role.kubernetes.io/barney-arm64=barney-arm64",
-    "node-role/barney-arm64=barney-arm64",
-    "node-role.kubernetes.io/worker=worker",
-    "node-role/worker=worker",
-    "px/enabled=false",
-  ]
-
   ###########################################################
   ##################     Worker labels     ##################
   ###########################################################
 
 
   # Defining the bsy snippets map, including machine specific snippets
-  labels_workers_bsy = { for node in local.node_bsy :
+  labels_workers_bsy = { for node in concat(local.node_bsy,local.node_bsy_head) :
     node.name => concat(
       local.worker_labels,
       local.barney_bsy_labels,
     )
   }
 
-  labels_workers_bsy_aarch64 = { for node in local.node_bsy_aarch64 :
+  labels_workers_bsy_aarch64 = { for node in concat(local.node_bsy_aarch64,local.node_bsy_head_aarch64) :
     node.name => concat(
       local.worker_labels,
       local.barney_bsy_aarch64_labels,
