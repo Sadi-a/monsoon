@@ -111,7 +111,7 @@ storage:
         inline: |
           if [ -L /dev/disk/by-label/data2 ] ;
           then
-            sudo btrfs fi show | awk '$1=="devid" {print $NF}'
+            sudo btrfs fi show data2 | awk '$1=="devid" {print $NF}'
           else
             for device in /sys/block/*; do
               if readlink "$device" | grep -q virtual; then
