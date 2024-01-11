@@ -103,7 +103,7 @@ resource "docker_image" "ipxe" {
 }
 
 resource "docker_image" "curl" {
-  name = "curlimages/curl"
+  name         = "curlimages/curl"
   keep_locally = false
 }
 

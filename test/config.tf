@@ -22,6 +22,15 @@ locals {
       # cpu_architecture = "aarch64",
       # extra_selectors = { "test" : "1", "test2" : "0", },
     }
+    worker101 = {
+      name             = "worker101"
+      mac              = "2e:6d:6e:73:6e:02",
+      install_disk     = "/dev/vda"
+      persist_disk     = "/dev/vdb",
+      cpu_architecture = "x86_64",
+      # cpu_architecture = "aarch64",
+      # extra_selectors = { "test" : "1", "test2" : "0", },
+    }
   }
 
   nodes          = merge(local.controllers, local.workers)
@@ -42,6 +51,7 @@ locals {
   node_bsy_head_aarch64 = [
   ]
   node_barney_aux = [
+    local.workers.worker101,
   ]
   node_bus = [
   ]
@@ -113,13 +123,13 @@ locals {
       local.snippets_ssh,
       [
         file("${local.snippets_path}/coreos/motdgen.yaml"),
-      #   # templatefile(
-      # #     # binds the network interfaces together in order to use all the bandwith we can get
-      # #     "${local.snippets_path}/bond/bond.yaml",
-      # #     {
-      # #       MACAddress = node.mac,
-      # #     }
-      # #   ),
+        #   # templatefile(
+        # #     # binds the network interfaces together in order to use all the bandwith we can get
+        # #     "${local.snippets_path}/bond/bond.yaml",
+        # #     {
+        # #       MACAddress = node.mac,
+        # #     }
+        # #   ),
       ],
     )
   }
@@ -186,14 +196,11 @@ locals {
   ###########################################################
 
 
-  # barney_bsy_taints = [
-  #   "type=barney:NoSchedule",
-  # ]
   barney_bsy_taints = [
-    "type=barney",
+    "type=barney:NoSchedule",
   ]
   barney_aux_taints = [
-    "type=barney:NoSchedule",
+    "type=barney_aux:NoSchedule",
   ]
   barney_bus_taints = [
     "type=bus:NoSchedule",
@@ -226,9 +233,9 @@ locals {
 
   # have to set machine specific taints
   worker_node_taints = merge(
-    local.taints_workers_bsy,
-    local.taints_workers_barney_aux,
-    local.taints_workers_bus
+    # local.taints_workers_bsy,
+    # local.taints_workers_barney_aux,
+    # local.taints_workers_bus,
   )
 
   ###########################################################
@@ -268,16 +275,16 @@ locals {
   ]
 
   barney_aux_labels = [
-    "px/enabled=false",
-    "node-role.kubernetes.io/worker=worker",
+    # "node-role.kubernetes.io/worker=worker",
     "node-role/worker=worker",
-    "node-role/barney-aux=barney_aux",
-    "node-role.kubernetes.io/barney-aux=barney-aux",
-    "node-role/barney-aux=barney-aux",
-    "node-role.kubernetes.io/barney-kafka=barney-kafka",
-    "node-role/barney-kafka=barney-kafka",
-    "node-role.kubernetes.io/docker=docker",
-    "node-role/docker=docker",
+    "role/worker=worker",
+    # "node-role/barney-aux=barney_aux",
+    # "node-role.kubernetes.io/barney-aux=barney-aux",
+    # "node-role/barney-aux=barney-aux",
+    # "node-role.kubernetes.io/barney-kafka=barney-kafka",
+    # "node-role/barney-kafka=barney-kafka",
+    # "node-role.kubernetes.io/docker=docker",
+    # "node-role/docker=docker",
   ]
 
   barney_bus_labels = [
@@ -326,7 +333,7 @@ locals {
   # Defining the bsy snippets map, including machine specific snippets
   labels_workers_barney_aux = { for node in local.node_barney_aux :
     [for name, n in local.workers : name if n == node][0] => concat(
-      local.worker_labels,
+      # local.worker_labels,
       local.barney_aux_labels,
     )
   }

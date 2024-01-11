@@ -17,6 +17,36 @@ resource "kubernetes_namespace" "barney" {
   }
 }
 
+resource "kubernetes_service_account" "barney_default" {
+  metadata {
+    name      = "default"
+    namespace = "barney"
+  }
+  # secret {
+  #   name = "${kubernetes_manifest.secret_barney_bsy_git_credentials.metadata.0.name}"
+  # }
+  depends_on = [kubernetes_namespace.barney]
+}
+
+#---------------------------------------------------------------------------------------
+
+# resource "kubernetes_role" "barney_bsy" {
+#   metadata {
+#     name = "barney-bsy"
+#     labels = {
+#       # barney_bsy_infra = "argocd.argoproj.io/instance=barney-bsy-infra"
+#     }
+#   }
+
+#   rule {
+#     api_groups     = ["",]
+#     resources      = ["pods",]
+#     resource_names = ["barney-bsy",]
+#     verbs          = ["use",]
+#   }
+# }
+
+
 #---------------------------------------------------------------------------------------
 
 resource "kubernetes_manifest" "secret_barney_bsy_git_credentials" {
@@ -40,6 +70,7 @@ resource "kubernetes_manifest" "secret_barney_bsy_git_credentials" {
     }
     "type" = "Opaque"
   }
+  depends_on = [kubernetes_namespace.barney, ]
 }
 
 resource "kubernetes_manifest" "secret_barney_bsy_secrets" {
@@ -62,6 +93,7 @@ resource "kubernetes_manifest" "secret_barney_bsy_secrets" {
     }
     "type" = "Opaque"
   }
+  depends_on = [kubernetes_namespace.barney, ]
 }
 
 #---------------------------------------------------------------------------------------
@@ -87,6 +119,7 @@ resource "kubernetes_manifest" "barney--btm-firestore-credentials--infra" {
     }
     "type" = "Opaque"
   }
+  depends_on = [kubernetes_namespace.barney, ]
 }
 
 resource "kubernetes_manifest" "barney--btm-github-username--infra" {
@@ -109,6 +142,7 @@ resource "kubernetes_manifest" "barney--btm-github-username--infra" {
     }
     "type" = "Opaque"
   }
+  depends_on = [kubernetes_namespace.barney, ]
 }
 
 resource "kubernetes_manifest" "barney--btm-github-password--infra" {
@@ -131,6 +165,7 @@ resource "kubernetes_manifest" "barney--btm-github-password--infra" {
     }
     "type" = "Opaque"
   }
+  depends_on = [kubernetes_namespace.barney, ]
 }
 
 resource "kubernetes_manifest" "barney--jenkins-api-token--infra" {
@@ -153,6 +188,7 @@ resource "kubernetes_manifest" "barney--jenkins-api-token--infra" {
     }
     "type" = "Opaque"
   }
+  depends_on = [kubernetes_namespace.barney, ]
 }
 
 resource "kubernetes_manifest" "barney--srv_bessy_gerrit_token--infra" {
@@ -178,6 +214,7 @@ resource "kubernetes_manifest" "barney--srv_bessy_gerrit_token--infra" {
     }
     "type" = "Opaque"
   }
+  depends_on = [kubernetes_namespace.barney, ]
 }
 
 #---------------------------------------------------------------------------------------
@@ -206,6 +243,7 @@ resource "kubernetes_manifest" "arista_srv_bessy_github_token" {
     }
     "type" = "Opaque"
   }
+  depends_on = [kubernetes_namespace.barney, ]
 }
 
 resource "kubernetes_manifest" "srv_bessy_gerrit_token" {
@@ -231,6 +269,7 @@ resource "kubernetes_manifest" "srv_bessy_gerrit_token" {
     }
     "type" = "Opaque"
   }
+  depends_on = [kubernetes_namespace.barney, ]
 }
 
 resource "kubernetes_manifest" "srv_bessy_horseland_gerrit_token" {
@@ -256,6 +295,7 @@ resource "kubernetes_manifest" "srv_bessy_horseland_gerrit_token" {
     }
     "type" = "Opaque"
   }
+  depends_on = [kubernetes_namespace.barney, ]
 }
 
 # #---------------------------------------------------------------------------------------
@@ -464,18 +504,12 @@ resource "kubernetes_manifest" "barney_rsvp_p4togit_ssh_key" {
     }
     "type" = "Opaque"
   }
+  depends_on = [kubernetes_namespace.barney, ]
 }
 
 
 
 #---------------------------------------------------------------------------------------
-
-resource "kubernetes_service_account" "barney_default" {
-  metadata {
-    name      = "barney-default"
-    namespace = "barney"
-  }
-}
 
 resource "kubernetes_manifest" "pod_nginx" {
   manifest = {
@@ -498,9 +532,11 @@ resource "kubernetes_manifest" "pod_nginx" {
       ]
     }
   }
+  depends_on = [
+    kubernetes_namespace.barney,
+    kubernetes_service_account.barney_default
+  ]
 }
-
-
 
 
 # create auth through namespace in here ?

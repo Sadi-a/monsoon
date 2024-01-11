@@ -1,6 +1,6 @@
 module "monsoon" {
   source = "git::https://github.com/sadi-a/monsoon//flatcar-linux/kubernetes?ref=sadi/live"
-  # source = "git::https://github.com/aristanetworks/monsoon//flatcar-linux/kubernetes?ref=HEAD"
+  # source = "git::https://github.com/sadi-a/monsoon//flatcar-linux/kubernetes?ref=HEAD"
 
   # bare-metal
   cluster_name           = "monsoon-test"
@@ -15,6 +15,7 @@ module "monsoon" {
   enable_install     = local.enable_install
   install_disk       = local.install_disk
   networking         = "flannel"
+  cached_install     = true
   # set to http only if you cannot chainload to iPXE firmware with https support
   download_protocol = "http"
 
@@ -48,7 +49,6 @@ module "monsoon" {
   )
   worker_node_labels = local.worker_node_labels
   worker_node_taints = local.worker_node_taints
-  # worker_node_taints = local.worker_node_taints
   depends_on = [
     libvirt_domain.vm,
   ]
