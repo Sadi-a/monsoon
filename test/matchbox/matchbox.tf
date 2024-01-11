@@ -102,7 +102,16 @@ resource "docker_image" "ipxe" {
   keep_locally = false
 }
 
-resource "docker_volume" "matchbox_assets" {}
+resource "docker_image" "curl" {
+  name = "curlimages/curl"
+  keep_locally = false
+}
+
+resource "docker_volume" "matchbox_assets" {
+}
+
+resource "docker_volume" "flatcar_assets" {
+}
 
 resource "docker_container" "copy_ipxe" {
   image    = docker_image.ipxe.image_id
@@ -113,17 +122,39 @@ resource "docker_container" "copy_ipxe" {
 
   command = [
     "sh", "-c", <<EOS
-    mkdir -p /mnt/ipxe/x86_64 /mnt/ipxe/aarch64
-    cp -f /ipxe/src/bin-x86_64-efi/*.efi     /mnt/ipxe/x86_64/
-    cp -f /ipxe/src/bin-x86_64-pcbios/*.kpxe /mnt/ipxe/x86_64/
-    cp -f /ipxe/src/bin-arm64-efi/*.efi      /mnt/ipxe/aarch64/
-    chmod 644 /mnt/ipxe/x86_64/* /mnt/ipxe/aarch64/*
+    mkdir -p /mnt/x86_64 /mnt/aarch64
+    cp -f /ipxe/src/bin-x86_64-efi/*.efi     /mnt/x86_64/
+    cp -f /ipxe/src/bin-x86_64-pcbios/*.kpxe /mnt/x86_64/
+    cp -f /ipxe/src/bin-arm64-efi/*.efi      /mnt/aarch64/
+    chmod 644 /mnt/x86_64/* /mnt/aarch64/*
     EOS
   ]
 
   volumes {
     container_path = "/mnt"
     volume_name    = docker_volume.matchbox_assets.name
+  }
+}
+
+resource "docker_container" "copy_flatcar" {
+  image    = docker_image.curl.image_id
+  name     = "copy_flatcar"
+  start    = true
+  attach   = true
+  must_run = false
+
+  command = [
+    "sh", "-c", <<EOS
+    mkdir -p 3510.2.0/ && cd 3510.2.0
+    curl -O https://stable.release.flatcar-linux.net/amd64-usr/3510.2.0/flatcar_production_image.vmlinuz
+    curl -O https://stable.release.flatcar-linux.net/amd64-usr/3510.2.0/flatcar_production_pxe_image.cpio.gz
+    curl -O https://stable.release.flatcar-linux.net/amd64-usr/3510.2.0/flatcar_production_pxe.vmlinuz
+    EOS
+  ]
+
+  volumes {
+    container_path = "/home/curl_user/"
+    volume_name    = docker_volume.flatcar_assets.name
   }
 }
 
@@ -142,8 +173,12 @@ resource "docker_container" "matchbox" {
   ]
 
   volumes {
-    container_path = "/var/lib/matchbox/assets"
+    container_path = "/var/lib/matchbox/assets/ipxe"
     volume_name    = docker_volume.matchbox_assets.name
+  }
+  volumes {
+    container_path = "/var/lib/matchbox/assets/flatcar"
+    volume_name    = docker_volume.flatcar_assets.name
   }
 
   upload {
