@@ -26,8 +26,8 @@ module "monsoon" {
       name         = k,
       mac          = v.mac,
       domain       = join(".", [k, libvirt_network.monsoon_test.domain]),
-      install_disk = v.install_disk
-      persist_disk = v.persist_disk
+      install_disk = v.install_disk,
+      persist_disk = v.persist_disk,
       # cpu_architecture = v.cpu_architecture,
     }
   ]
@@ -37,16 +37,13 @@ module "monsoon" {
       name         = k,
       mac          = v.mac,
       domain       = join(".", [k, libvirt_network.monsoon_test.domain]),
-      install_disk = v.install_disk
-      persist_disk = v.persist_disk
+      install_disk = v.install_disk,
+      persist_disk = v.persist_disk,
       # cpu_architecture = v.cpu_architecture,
     }
   ]
 
-  snippets = merge(
-    local.snippets_controllers,
-    local.snippets_workers
-  )
+  snippets           = local.snippets
   worker_node_labels = local.worker_node_labels
   worker_node_taints = local.worker_node_taints
   depends_on = [

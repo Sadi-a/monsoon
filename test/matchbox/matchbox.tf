@@ -147,8 +147,10 @@ resource "docker_container" "copy_flatcar" {
     "sh", "-c", <<EOS
     mkdir -p 3510.2.0/ && cd 3510.2.0
     curl -O https://stable.release.flatcar-linux.net/amd64-usr/3510.2.0/flatcar_production_image.vmlinuz
-    curl -O https://stable.release.flatcar-linux.net/amd64-usr/3510.2.0/flatcar_production_pxe_image.cpio.gz
     curl -O https://stable.release.flatcar-linux.net/amd64-usr/3510.2.0/flatcar_production_pxe.vmlinuz
+    curl -O https://stable.release.flatcar-linux.net/amd64-usr/3510.2.0/flatcar_production_pxe_image.cpio.gz
+    curl -O https://stable.release.flatcar-linux.net/amd64-usr/3510.2.0/flatcar_production_image.bin.bz2
+    curl -O https://stable.release.flatcar-linux.net/amd64-usr/3510.2.0/flatcar_production_image.bin.bz2.sig
     EOS
   ]
 

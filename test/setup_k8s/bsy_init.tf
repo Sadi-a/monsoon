@@ -1,6 +1,6 @@
 locals {
   barney_namespace = "barney"
-  containers_num   = 1
+  containers_num   = 2
 }
 
 resource "kubernetes_namespace" "barney" {
@@ -17,33 +17,55 @@ resource "kubernetes_namespace" "barney" {
   }
 }
 
-resource "kubernetes_service_account" "barney_default" {
-  metadata {
-    name      = "default"
-    namespace = "barney"
-  }
-  # secret {
-  #   name = "${kubernetes_manifest.secret_barney_bsy_git_credentials.metadata.0.name}"
-  # }
-  depends_on = [kubernetes_namespace.barney]
-}
-
 #---------------------------------------------------------------------------------------
 
-# resource "kubernetes_role" "barney_bsy" {
-#   metadata {
-#     name = "barney-bsy"
+# data "kubernetes_nodes" "per_label" {
+#   for_each = toset(["barney", "bus", "barney-aux"])
+#   metadata{
 #     labels = {
-#       # barney_bsy_infra = "argocd.argoproj.io/instance=barney-bsy-infra"
+#       "node-role/${each.key}" = "${each.key}"
 #     }
 #   }
+#   depends_on = [kubernetes_namespace.barney, ]
+# }
 
-#   rule {
-#     api_groups     = ["",]
-#     resources      = ["pods",]
-#     resource_names = ["barney-bsy",]
-#     verbs          = ["use",]
+# resource "kubernetes_node_taint" "barney_bsy" {
+#   for_each = toset(data.kubernetes_nodes.per_label["barney"].nodes)
+#   metadata {
+#     name = each.value.metadata.0.name
 #   }
+#   taint {
+#     key    = "type=barney"
+#     value  = "true"
+#     effect = "NoSchedule"
+#   }
+#   depends_on = [kubernetes_namespace.barney, ]
+# }
+
+# resource "kubernetes_node_taint" "barney_aux" {
+#   for_each = toset(data.kubernetes_nodes.per_label["barney-aux"].nodes)
+#   metadata {
+#     name = each.value.metadata.0.name
+#   }
+#   taint {
+#     key    = "type=barney_aux"
+#     value  = "true"
+#     effect = "NoSchedule"
+#   }
+#   depends_on = [kubernetes_namespace.barney, ]
+# }
+
+# resource "kubernetes_node_taint" "barney_bus" {
+#   for_each = toset(data.kubernetes_nodes.per_label["bus"].nodes)
+#   metadata {
+#     name = each.value.metadata.0.name
+#   }
+#   taint {
+#     key    = "type=bus"
+#     value  = "true"
+#     effect = "NoSchedule"
+#   }
+#   depends_on = [kubernetes_namespace.barney, ]
 # }
 
 
@@ -298,191 +320,6 @@ resource "kubernetes_manifest" "srv_bessy_horseland_gerrit_token" {
   depends_on = [kubernetes_namespace.barney, ]
 }
 
-# #---------------------------------------------------------------------------------------
-# # Multibar
-
-# resource "kubernetes_manifest" "multibar-alpha-secrets" {
-#   manifest = {
-#     "apiVersion" = "v1"
-#     "data" = {
-#       "username" = "a"
-#       "password" = "a"
-#       "ssh-key" = "a"
-#       "ignore-host-keys" = "true"
-
-#     }
-#     "kind" = "Secret"
-#     "metadata" = {
-#       "annotations" = {
-#         "maintainer" = "barney-dev@arista.com"
-#       }
-#       "labels" = {
-#           "app.kubernetes.io/app" = "bsy"
-#           "app.kubernetes.io/name" = "bsy"
-#           "app.kubernetes.io/part-of" = "barney"
-#       }
-#       "name"      = "multibar-alpha-secrets"
-#       "namespace" = "barney"
-#     }
-#     "type" = "Opaque"
-#   }
-# }
-
-# resource "kubernetes_manifest" "multibar-beta-secrets" {
-#   manifest = {
-#     "apiVersion" = "v1"
-#     "data" = {
-#       "username" = "a"
-#       "password" = "a"
-#       "ssh-key" = "a"
-#       "ignore-host-keys" = "true"
-
-#     }
-#     "kind" = "Secret"
-#     "metadata" = {
-#       "annotations" = {
-#         "maintainer" = "barney-dev@arista.com"
-#       }
-#       "labels" = {
-#           "app.kubernetes.io/app" = "bsy"
-#           "app.kubernetes.io/name" = "bsy"
-#           "app.kubernetes.io/part-of" = "barney"
-#       }
-#       "name"      = "multibar-beta-secrets"
-#       "namespace" = "barney"
-#     }
-#     "type" = "Opaque"
-#   }
-# }
-
-# resource "kubernetes_manifest" "multibar-production-secrets" {
-#   manifest = {
-#     "apiVersion" = "v1"
-#     "data" = {
-#       "username" = "a"
-#       "password" = "a"
-#       "ssh-key" = "a"
-#       "ignore-host-keys" = "true"
-
-#     }
-#     "kind" = "Secret"
-#     "metadata" = {
-#       "annotations" = {
-#         "maintainer" = "barney-dev@arista.com"
-#       }
-#       "labels" = {
-#           "app.kubernetes.io/app" = "bsy"
-#           "app.kubernetes.io/name" = "bsy"
-#           "app.kubernetes.io/part-of" = "barney"
-#       }
-#       "name"      = "multibar-production-secrets"
-#       "namespace" = "barney"
-#     }
-#     "type" = "Opaque"
-#   }
-# }
-
-# resource "kubernetes_manifest" "multibar-production-github-secrets" {
-#   manifest = {
-#     "apiVersion" = "v1"
-#     "data" = {
-#       "username" = "a"
-#       "password" = "a"
-#       "ssh-key" = "a"
-#       "ignore-host-keys" = "true"
-
-#     }
-#     "kind" = "Secret"
-#     "metadata" = {
-#       "annotations" = {
-#         "maintainer" = "barney-dev@arista.com"
-#       }
-#       "labels" = {
-#           "app.kubernetes.io/app" = "bsy"
-#           "app.kubernetes.io/name" = "bsy"
-#           "app.kubernetes.io/part-of" = "barney"
-#       }
-#       "name"      = "multibar-production-github-secrets"
-#       "namespace" = "barney"
-#     }
-#     "type" = "Opaque"
-#   }
-# }
-
-# resource "kubernetes_manifest" "multibar-barnzilla-repos-secrets" {
-#   manifest = {
-#     "apiVersion" = "v1"
-#     "data" = {
-#       "username" = "a"
-#       "password" = "a"
-#       "ssh-key" = "a"
-#       "ignore-host-keys" = "true"
-
-#     }
-#     "kind" = "Secret"
-#     "metadata" = {
-#       "annotations" = {
-#         "maintainer" = "barney-dev@arista.com"
-#       }
-#       "labels" = {
-#           "app.kubernetes.io/app" = "bsy"
-#           "app.kubernetes.io/name" = "bsy"
-#           "app.kubernetes.io/part-of" = "barney"
-#       }
-#       "name"      = "multibar-barnzilla-repos-secrets"
-#       "namespace" = "barney"
-#     }
-#     "type" = "Opaque"
-#   }
-# }
-
-# resource "kubernetes_manifest" "barney--multibar-firestore-secrets--infra" {
-#   manifest = {
-#     "apiVersion" = "v1"
-#     "data" = {
-#       "barney--multibar-firestore-secrets--infra" = "a"
-#     }
-#     "kind" = "Secret"
-#     "metadata" = {
-#       "annotations" = {
-#         "maintainer" = "barney-dev@arista.com"
-#       }
-#       "labels" = {
-#         "app.kubernetes.io/app"  = "barney-bsy"
-#         "app.kubernetes.io/name" = "bsy-secrets"
-#       }
-#       "name"      = "barney--multibar-firestore-secrets--infra"
-#       "namespace" = "barney"
-#     }
-#     "type" = "Opaque"
-#   }
-# }
-
-# #---------------------------------------------------------------------------------------
-# # bar observer
-
-# resource "kubernetes_manifest" "barney--bar-observer-password--infra" {
-#   manifest = {
-#     "apiVersion" = "v1"
-#     "data" = {
-#       "BAR_OBSERVER_PASSWORD" = "a"
-#     }
-#     "kind" = "Secret"
-#     "metadata" = {
-#       "annotations" = {
-#         "maintainer" = "barney-dev@arista.com"
-#       }
-#       "labels" = {
-#         "app.kubernetes.io/app"  = "barney-bsy"
-#         "app.kubernetes.io/name" = "bsy-secrets"
-#       }
-#       "name"      = "barney--bar-observer-password--infra"
-#       "namespace" = "barney"
-#     }
-#     "type" = "Opaque"
-#   }
-# }
-
 #---------------------------------------------------------------------------------------
 
 resource "kubernetes_manifest" "barney_rsvp_p4togit_ssh_key" {
@@ -534,7 +371,6 @@ resource "kubernetes_manifest" "pod_nginx" {
   }
   depends_on = [
     kubernetes_namespace.barney,
-    kubernetes_service_account.barney_default
   ]
 }
 

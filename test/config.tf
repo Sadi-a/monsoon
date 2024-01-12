@@ -2,7 +2,6 @@ locals {
 
   controllers = {
     controller100 = {
-      name             = "controller100"
       mac              = "1e:6d:6e:73:6e:01",
       install_disk     = "/dev/vda"
       persist_disk     = "/dev/vdb",
@@ -14,7 +13,6 @@ locals {
 
   workers = {
     worker100 = {
-      name             = "worker100"
       mac              = "2e:6d:6e:73:6e:01",
       install_disk     = "/dev/vda"
       persist_disk     = "/dev/vdb",
@@ -29,7 +27,7 @@ locals {
       persist_disk     = "/dev/vdb",
       cpu_architecture = "x86_64",
       # cpu_architecture = "aarch64",
-      # extra_selectors = { "test" : "1", "test2" : "0", },
+      # extra_selectors = { "test" : "2", "test2" : "3", },
     }
   }
 
@@ -42,7 +40,7 @@ locals {
   ###########################################################
 
   node_bsy = [
-    local.workers.worker100,
+    local.nodes.worker100,
   ]
   node_bsy_aarch64 = [
   ]
@@ -51,9 +49,25 @@ locals {
   node_bsy_head_aarch64 = [
   ]
   node_barney_aux = [
-    local.workers.worker101,
+    local.nodes.worker101,
   ]
   node_bus = [
+  ]
+
+  # The following roles are more specific, like if you want to activate a feature
+  # For example, here, we wish to enable cgroups on some nodes, which is done
+  # through the node_cgroups role
+
+  node_cgroups = [
+    local.nodes.controller100,
+    local.nodes.worker100,
+    local.nodes.worker101,
+  ]
+
+  node_bond = [
+    local.nodes.controller100,
+    local.nodes.worker100,
+    local.nodes.worker101,
   ]
 
   ###########################################################
@@ -77,7 +91,8 @@ locals {
     file("${local.snippets_path}/coreos/inotify.yaml"),
     # Generates a nice motd when logging in with SSH
     file("${local.snippets_path}/coreos/motdgen.yaml"),
-    # Configures the network
+    # Configures the network and some system variables
+    # needed for flannel
     file("${local.snippets_path}/coreos/network_config.yaml"),
     # Mitigates a known bug originating from systemd
     file("${local.snippets_path}/coreos/systemd_udevd_bug.yaml"),
@@ -89,8 +104,6 @@ locals {
     file("${local.snippets_path}/barney/ioscheduler.yaml"),
     # Sets the maximum socket read and write size to 8MiB
     file("${local.snippets_path}/barney/sysctl.yaml"),
-    # enables cgroupv2
-    file("${local.snippets_path}/barney/cgroups.yaml"),
     # Creates the cache btrfs and mounts it
     templatefile(
       "${local.snippets_path}/barney/btrfs.yaml",
@@ -106,7 +119,13 @@ locals {
     file("${local.snippets_path}/k8s_cluster/main.yaml"),
   ]
 
-  snippets_ssh = [file("${local.snippets_path}/ssh-keys.yaml"), ]
+  snippets_ssh = [
+    file("${local.snippets_path}/ssh-keys.yaml"),
+  ]
+
+  snippets_cgroups = [
+    file("${local.snippets_path}/cgroups/cgroups.yaml"),
+  ]
 
   snippets_workers_generic = concat(
     local.snippets_coreos,
@@ -118,32 +137,48 @@ locals {
   ###############     Controller snippets     ###############
   ###########################################################
 
-  snippets_controllers = { for node in local.controllers :
+  snippets_controllers = tomap({ for node in local.controllers :
     [for name, n in local.controllers : name if n == node][0] => concat(
       local.snippets_ssh,
       [
         file("${local.snippets_path}/coreos/motdgen.yaml"),
-        #   # templatefile(
-        # #     # binds the network interfaces together in order to use all the bandwith we can get
-        # #     "${local.snippets_path}/bond/bond.yaml",
-        # #     {
-        # #       MACAddress = node.mac,
-        # #     }
-        # #   ),
       ],
     )
-  }
+  })
 
   ###########################################################
   #################     Worker snippets     #################
   ###########################################################
 
+  snippets_workers = tomap({ for node, _ in local.workers :
+    node => concat(local.snippets_workers_generic, )
+  })
+
   # Defining the bsy snippets map, including machine specific snippets
-  snippets_workers_bsy = { for node in concat(local.node_bsy, local.node_bsy_aarch64, local.node_bsy_head, local.node_bsy_head_aarch64) :
-    [for name, n in local.workers : name if n == node][0] => concat(
-      local.snippets_workers_generic,
+  snippets_workers_bsy = tomap({ for node in concat(local.node_bsy, local.node_bsy_aarch64, local.node_bsy_head, local.node_bsy_head_aarch64) :
+    [for name, n in local.nodes : name if n == node][0] => concat(
       local.snippets_barney,
+    )
+  })
+
+  snippets_workers_barney_aux = tomap({ for node in local.node_barney_aux :
+    [for name, n in local.nodes : name if n == node][0] => concat([])
+  })
+
+  snippets_workers_bus = tomap({ for node in local.node_bus :
+    [for name, n in local.nodes : name if n == node][0] => concat([]
+    )
+  })
+
+  snippets_nodes_cgroups = tomap({ for node in local.node_cgroups :
+    [for name, n in local.nodes : name if n == node][0] => concat(local.snippets_cgroups)
+  })
+
+  snippets_nodes_bond = tomap({ for node in local.node_bond :
+    [for name, n in local.nodes : name if n == node][0] => concat(
       [
+        # this one snippet is node specific as it requires some info about the node,
+        # which is the reason we have to template it here.
         templatefile(
           # binds the network interfaces together in order to use all the bandwith we can get
           "${local.snippets_path}/bond/bond.yaml",
@@ -153,57 +188,52 @@ locals {
         ),
       ],
     )
-  }
+  })
 
-  snippets_workers_barney_aux = { for node in local.node_barney_aux :
-    [for name, n in local.workers : name if n == node][0] => concat(
-      local.snippets_workers_generic,
-      [
-        templatefile(
-          # binds the network interfaces together in order to use all the bandwith we can get
-          "${local.snippets_path}/bond/bond.yaml",
-          {
-            MACAddress = node.mac,
-          }
-        ),
-      ],
-    )
-  }
+  ###########################################################
+  #################     Merging snippets     ################
+  ###########################################################
 
-  snippets_workers_bus = { for node in local.node_bus :
-    [for name, n in local.workers : name if n == node][0] => concat(
-      local.snippets_workers_generic,
-      [
-        templatefile(
-          # binds the network interfaces together in order to use all the bandwith we can get
-          "${local.snippets_path}/bond/bond.yaml",
-          {
-            MACAddress = node.mac,
-          }
-        ),
-      ],
-    )
-  }
-
-  snippets_workers = merge(
+  snippets_nodes = [
+    local.snippets_workers,
+    local.snippets_controllers,
     local.snippets_workers_bsy,
-    local.snippets_workers_bus,
     local.snippets_workers_barney_aux,
-  )
+    local.snippets_workers_bus,
+    local.snippets_nodes_cgroups,
+    local.snippets_nodes_bond,
+  ]
+
+  # What we do here isn't clear at first glance so let's explain :
+  # for all our nodes, we put them in a list and go see in each list of
+  # snippets if there are snippets associated to this node. We then concatenate
+  # these snippets to all the others belonging to that node in order to end up
+  # with all the snippets belonging to it.
+  #
+  # This has to be done because, when merging maps, the contents of the values
+  # for duplicate keys are not appended to each other but overwritten
+  # This is necessary as we can have one node in two roles, such as one node that
+  # would belong to both the bsy and cgroup roles.
+
+  snippets = { for node, _ in local.nodes :
+    node =>
+    distinct(concat([
+      for snippets in local.snippets_nodes : concat([], [for node_, snips in snippets : snips if node == node_]...)
+    ]...))
+  }
 
   ###########################################################
   ######################     Taints     #####################
   ###########################################################
 
-
   barney_bsy_taints = [
-    "type=barney:NoSchedule",
+    "type=barney:PreferNoSchedule",
   ]
   barney_aux_taints = [
-    "type=barney_aux:NoSchedule",
+    "type=barney_aux:PreferNoSchedule",
   ]
   barney_bus_taints = [
-    "type=bus:NoSchedule",
+    "type=bus:PreferNoSchedule",
   ]
 
   ###########################################################
@@ -211,146 +241,159 @@ locals {
   ###########################################################
 
   # Defining the bsy snippets map, including machine specific snippets
-  taints_workers_bsy = { for node in concat(local.node_bsy, local.node_bsy_aarch64, local.node_bsy_head, local.node_bsy_head_aarch64) :
+  taints_workers_bsy = tomap({ for node in concat(local.node_bsy, local.node_bsy_aarch64, local.node_bsy_head, local.node_bsy_head_aarch64) :
     [for name, n in local.workers : name if n == node][0] => concat(
       local.barney_bsy_taints,
     )
-  }
+  })
 
   # Defining the bsy snippets map, including machine specific snippets
-  taints_workers_barney_aux = { for node in local.node_barney_aux :
+  taints_workers_barney_aux = tomap({ for node in local.node_barney_aux :
     [for name, n in local.workers : name if n == node][0] => concat(
       local.barney_aux_taints,
     )
-  }
+  })
 
   # Defining the bsy snippets map, including machine specific snippets
-  taints_workers_bus = { for node in local.node_bus :
+  taints_workers_bus = tomap({ for node in local.node_bus :
     [for name, n in local.workers : name if n == node][0] => concat(
       local.barney_bus_taints,
     )
-  }
+  })
 
-  # have to set machine specific taints
-  worker_node_taints = merge(
-    # local.taints_workers_bsy,
-    # local.taints_workers_barney_aux,
-    # local.taints_workers_bus,
-  )
+  ###########################################################
+  ##################     Merging taints     #################
+  ###########################################################
+
+  taints_nodes = [
+    local.taints_workers_bsy,
+    local.taints_workers_barney_aux,
+    local.taints_workers_bus,
+  ]
+
+  worker_node_taints = { for node, _ in local.workers :
+    node =>
+    distinct(concat([
+      for taints in local.taints_nodes : concat([], [for node_, taint in taints : taint if node == node_]...)
+    ]...))
+  }
 
   ###########################################################
   ######################     Labels     #####################
   ###########################################################
 
   worker_labels = [
-    "node-role.kubernetes.io/worker=worker",
-    "node-role/worker=worker",
-    "px/enabled=false",
-  ]
-
-  barney_bsy_labels = [
-    "node-role.kubernetes.io/barney=barney",
-    "role/barney=barney",
-    "node-role.kubernetes.io/barnzilla=barnzilla",
-    "role=barnzilla",
-    "node-role.kubernetes.io/docker=docker",
-    "node-role/docker=docker",
-  ]
-
-  barney_bsy_head_labels = [
-    "node-role.kubernetes.io/barney-test=barney-test",
-    "node-role/barney-test=barney-test",
-  ]
-
-  barney_bsy_aarch64_labels = [
-    "node-role.kubernetes.io/barney-arm64=barney-arm64",
-    "node-role/barney-arm64=barney-arm64",
-    "node-role.kubernetes.io/docker=docker",
-    "node-role/docker=docker",
-  ]
-
-  barney_bsy_head_aarch64_labels = [
-    "node-role.kubernetes.io/barney-test-arm64=barney-test-arm64",
-    "node-role/barney-test-arm64=barney-test-arm64",
-  ]
-
-  barney_aux_labels = [
-    # "node-role.kubernetes.io/worker=worker",
     "node-role/worker=worker",
     "role/worker=worker",
-    # "node-role/barney-aux=barney_aux",
-    # "node-role.kubernetes.io/barney-aux=barney-aux",
-    # "node-role/barney-aux=barney-aux",
-    # "node-role.kubernetes.io/barney-kafka=barney-kafka",
-    # "node-role/barney-kafka=barney-kafka",
-    # "node-role.kubernetes.io/docker=docker",
-    # "node-role/docker=docker",
+    "px/enabled=false",
+    "app/managed-by=monsoon.git",
   ]
 
-  barney_bus_labels = [
-    "node-role.kubernetes.io/bus=bus",
-    "node-role/bus=bus",
-    "node-role.kubernetes.io/bus-node=bus-node",
-    "node-role/bus-node=bus-node",
-    "node-role.kubernetes.io/docker=docker",
-    "node-role/docker=docker",
-  ]
+  roles = {
+    "bsy" = [
+      "barney",
+      "barnzilla",
+      "barney-kafka"
+    ],
+    "bsy_test" = [
+      "barney-test"
+    ],
+    "bsy_aarch64" = [
+      "barney-arm64"
+    ],
+    "bsy_test_aarch64" = [
+      "barney-test-arm64"
+    ],
+    "barney_aux" = [
+      "barney-aux",
+      "barney-kafka"
+    ],
+    "bus" = [
+      "bus"
+    ],
+  }
+
+  role_specific_labels = {
+    "bsy" = [
+      "environment=demo-bsy"
+    ],
+    "bsy_test" = [
+      "environment=demo-bsy-head"
+    ],
+    "bsy_aarch64" = [
+      "environment=demo-bsy-aarch64"
+    ],
+    "bsy_test_aarch64" = [
+      "environment=demo-bsy-head-aarch64"
+    ],
+    "barney_aux" = [
+      "environment=demo-bsy-aux"
+    ],
+    "bus" = [
+      "environment=demo-bus"
+    ],
+  }
+
+  # Defining the labels map, which will be assigned to each machine later
+  labels = { for generic, roles in local.roles :
+    generic => concat(
+      local.worker_labels,
+      [for role in roles : "node-role/${role}=${role}"],
+      [for role in roles : "role/${role}=${role}"],
+      [for label in local.role_specific_labels[generic] : label],
+    )
+  }
 
   ###########################################################
   ##################     Worker labels     ##################
   ###########################################################
 
-
-  # Defining the bsy snippets map, including machine specific snippets
+  # Defining the bsy labels
   labels_workers_bsy = { for node in local.node_bsy :
-    [for name, n in local.workers : name if n == node][0] => concat(
-      local.worker_labels,
-      local.barney_bsy_labels,
-    )
+    [for name, n in local.workers : name if n == node][0] => lookup(local.labels, "bsy")
   }
 
   labels_workers_bsy_head = { for node in local.node_bsy_head :
-    [for name, n in local.workers : name if n == node][0] => concat(
-      local.worker_labels,
-      local.barney_bsy_head_labels,
-    )
+    [for name, n in local.workers : name if n == node][0] => lookup(local.labels, "bsy_head")
   }
 
   labels_workers_bsy_aarch64 = { for node in local.node_bsy_aarch64 :
-    [for name, n in local.workers : name if n == node][0] => concat(
-      local.worker_labels,
-      local.barney_bsy_aarch64_labels,
-    )
+    [for name, n in local.workers : name if n == node][0] => lookup(local.labels, "bsy_aarch64")
   }
 
   labels_workers_bsy_head_aarch64 = { for node in local.node_bsy_head_aarch64 :
-    [for name, n in local.workers : name if n == node][0] => concat(
-      local.worker_labels,
-      local.barney_bsy_head_aarch64_labels,
-    )
+    [for name, n in local.workers : name if n == node][0] => lookup(local.labels, "bsy_head_aarch64")
   }
 
   # Defining the bsy snippets map, including machine specific snippets
   labels_workers_barney_aux = { for node in local.node_barney_aux :
-    [for name, n in local.workers : name if n == node][0] => concat(
-      # local.worker_labels,
-      local.barney_aux_labels,
-    )
+    [for name, n in local.workers : name if n == node][0] => lookup(local.labels, "barney_aux")
   }
 
   # Defining the bsy snippets map, including machine specific snippets
   labels_workers_bus = { for node in local.node_bus :
-    [for name, n in local.workers : name if n == node][0] => concat(
-      local.barney_bus_labels,
-    )
+    [for name, n in local.workers : name if n == node][0] => lookup(local.labels, "bus")
   }
 
-  # have to set machine specific taints
-  worker_node_labels = merge(
+  ###########################################################
+  ##################     Merging labels     #################
+  ###########################################################
+
+  labels_nodes = [
     local.labels_workers_bsy,
+    local.labels_workers_bsy_head,
     local.labels_workers_bsy_aarch64,
+    local.labels_workers_bsy_head_aarch64,
     local.labels_workers_barney_aux,
     local.labels_workers_bus,
-  )
+  ]
+
+  # have to set machine specific taints
+  worker_node_labels = { for node, _ in local.workers :
+    node =>
+    distinct(concat([
+      for labels in local.labels_nodes : concat([], [for node_, label in labels : label if node == node_]...)
+    ]...))
+  }
 
 }

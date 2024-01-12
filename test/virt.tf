@@ -28,6 +28,10 @@ resource "libvirt_network" "monsoon_test" {
       hostname = "worker100.k8s.local"
       ip       = "192.168.100.158"
     }
+    hosts {
+      hostname = "worker101.k8s.local"
+      ip       = "192.168.100.159"
+    }
   }
 
   dnsmasq_options {

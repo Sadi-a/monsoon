@@ -4,7 +4,6 @@ systemd:
   units:
     - name: ioscheduler.service
       enabled: true
-      # What are ROTATIONAL_SCHEDULERS and SSD_SCHEDULERS supposed to represent ?
       contents: |
         [Unit]
         Description=Set block I/O device scheduler for drives as per configuration

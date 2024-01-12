@@ -1,0 +1,62 @@
+variant: flatcar
+version: 1.0.0
+storage:
+  directories:
+    - path: /etc/systemd/system/core@.service.d
+      mode: 0644
+    - path: /etc/containerd/config.d
+      mode: 0644
+  files:
+    - path: /usr/share/oem/grub.cfg
+      mode: 0644
+      contents :
+        inline: |
+          set linux_append="$linux_append systemd.unified_cgroup_hierarchy=1"
+    - path: /etc/systemd/system/core@.service.d/delegate.conf
+      # Allows core to delegate cpu, cpuset and memory 
+      mode: 0644
+      contents: 
+        inline: |
+          [Service]
+          Delegate=cpu cpuset memory
+    - path: /etc/containerd/config.toml
+      mode: 0644
+      contents:
+        inline: |
+          version = 2
+          # persistent data location
+          root = "/var/lib/containerd"
+          # runtime state information
+          state = "/run/containerd"
+          # set containerd as a subreaper on linux when it is not running as PID 1
+          subreaper = true
+          # set containerd's OOM score
+          oom_score = -999
+          disabled_plugins = []
+          # grpc configuration
+          [grpc]
+          address = "/run/containerd/containerd.sock"
+          # socket uid
+          uid = 0
+          # socket gid
+          gid = 0
+          [plugins."containerd.runtime.v1.linux"]
+          # shim binary name/path
+          shim = "containerd-shim"
+          # runtime binary name/path
+          runtime = "runc"
+          # do not use a shim when starting containers, saves on memory but
+          # live restore is not supported
+          no_shim = false
+          [plugins."io.containerd.grpc.v1.cri"]
+          # enable SELinux labeling
+          enable_selinux = true
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+          runtime_type = "io.containerd.runc.v2"
+
+          # setting runc.options unsets parent settings
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+          SystemdCgroup = true
+
+          [plugins."io.containerd.grpc.v1.cri".registry]
+          config_path = "/etc/containerd/certs.d"
